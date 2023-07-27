@@ -637,10 +637,9 @@ class Route_mapsTemplate(NetworkTemplate):
             "name": "route_map",
             "getval": re.compile(
                 r"""
-                ^route-map*
-                \s*(?P<route_map>\S+)*
-                \s*(?P<action>deny|permit)*
-                \s*(?P<sequence>\d+)*
+                ^route-map\s(?P<route_map>\S+)
+                (\s(?P<action>deny|permit))
+                (\s(?P<sequence>\d+))
                 (\s|$)""",
                 re.VERBOSE,
             ),
@@ -659,8 +658,7 @@ class Route_mapsTemplate(NetworkTemplate):
             "name": "continue_entry",
             "getval": re.compile(
                 r"""
-                \s+continue*
-                \s*(?P<entry_sequence>\d+)*
+                \s+continue\s(?P<entry_sequence>\d+)
                 $""",
                 re.VERBOSE,
             ),
@@ -682,8 +680,7 @@ class Route_mapsTemplate(NetworkTemplate):
             "name": "description",
             "getval": re.compile(
                 r"""
-                \s+description*
-                \s*(?P<description>\S.*)*
+                \s+description\s(?P<description>.+$)
                 $""",
                 re.VERBOSE,
             ),
@@ -700,25 +697,29 @@ class Route_mapsTemplate(NetworkTemplate):
             "name": "match",
             "getval": re.compile(
                 r"""
-                \s+match*
-                \s*(?P<additional_paths>additional-paths\sadvertise-set\s\S.*)*
-                \s*(?P<as_path>as-path.*|as-path)*
-                \s*(?P<clns>clns\s(address\s\S+|next-hop\s\S+|route-source\s\S+))*
-                \s*(?P<community>community\s\S.*)*
-                \s*(?P<extcommunity>extcommunity\s\S.*)*
-                \s*(?P<interfaces>interface\s\S.*)*
-                \s*(?P<length>length\s\d+\s\d+)*
-                \s*(?P<local_preference>local-preference\s\d.*|local-preference)*
-                \s*(?P<mdt_group>mdt-group\s\S.*|mdt-group)*
-                \s*(?P<metric>metric\sexternal\s\S.*|metric\s\d+\S.*)*
-                \s*(?P<mpls_label>mpls-label)*
-                \s*(?P<policy_list>policy-list\s\S.*)*
-                \s*(?P<route_type>route-type\s(external\s(type-1|type-2)|internal|level-1|level-2|local|nssa-external\s(type-1|type-2)))*
-                \s*(?P<rpki>rpki\s(invalid|not-found|valid))*
-                \s*(?P<security_group>security-group\s(destination\stag\s\d.*|source\stag\s\d.*))*
-                \s*(?P<source_protocol>source-protocol\s\S.*)*
-                \s*(?P<tag>tag\slist\s\S.*|tag\s\S.*)*
-                \s*(?P<track>track\s*\d+)*
+                \s+match
+                ((\sadditional-paths\sadvertise-set)
+                (\s(?P<all>all))?
+                (\s(?P<group_best>group-best))?
+                (\sbest\s(?P<best>\d+))?
+                (\sbest-range\s(?P<lower_limit>\d+)\s(?P<upper_limit>\d+))?)?
+                (\s(?P<as_path>as-path.*|as-path))?
+                (\s(?P<clns>clns\s(address\s\S+|next-hop\s\S+|route-source\s\S+)))?
+                (\s(?P<community>community\s\S.*))?
+                (\s(?P<extcommunity>extcommunity\s\S.*))?
+                (\s(?P<interfaces>interface\s\S.*))?
+                (\s(?P<length>length\s\d+\s\d+))?
+                (\s(?P<local_preference>local-preference\s\d.*|local-preference))?
+                (\s(?P<mdt_group>mdt-group\s\S.*|mdt-group))?
+                (\s(?P<metric>metric\sexternal\s\S.*|metric\s\d+\S.*))?
+                (\s(?P<mpls_label>mpls-label))?
+                (\s(?P<policy_list>policy-list\s\S.*))?
+                (\s(?P<route_type>route-type\s(external\s(type-1|type-2)|internal|level-1|level-2|local|nssa-external\s(type-1|type-2))))?
+                (\s(?P<rpki>rpki\s(invalid|not-found|valid)))?
+                (\s(?P<security_group>security-group\s(destination\stag\s\d.*|source\stag\s\d.*)))?
+                (\s(?P<source_protocol>source-protocol\s\S.*))?
+                (\s(?P<tag>tag\slist\s\S.*|tag\s\S.*))?
+                (\s(?P<track>track\s*\d+))?
                 $""",
                 re.VERBOSE,
             ),
@@ -729,16 +730,13 @@ class Route_mapsTemplate(NetworkTemplate):
                         "entries": {
                             "match": {
                                 "additional_paths": {
-                                    "all": "{{ True if additional_paths is defined and 'all' in additional_paths }}",
-                                    "best": "{{ additional_paths.split('best ')[1].split(' ')[0]|int if additional_paths is defined and\
-                                             'best' in additional_paths and 'best-range' not in additional_paths }}",
+                                    "all": "{{ not not all }}",
+                                    "best": "{{ best }}",
                                     "best_range": {
-                                        "lower_limit": "{{ additional_paths.split('best-range ')[1].split(' ')[0]|int if additional_paths is defined and\
-                                                 'best-range' in additional_paths }}",
-                                        "upper_limit": "{{ additional_paths.split('best-range ')[1].split(' ')[1]|int if additional_paths is defined and\
-                                                 'best-range' in additional_paths }}",
+                                        "lower_limit": "{{ lower_limit }}",
+                                        "upper_limit": "{{ upper_limit }}",
                                     },
-                                    "group_best": "{{ True if additional_paths is defined and 'group-best' in additional_paths }}",
+                                    "group_best": "{{ not not group_best }}",
                                 },
                                 "as_path": {
                                     "set": "{{ True if as_path is defined and as_path.split(' ')|length == 1 }}",
